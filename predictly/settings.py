@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'marketanalysis',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +81,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'predictly.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
