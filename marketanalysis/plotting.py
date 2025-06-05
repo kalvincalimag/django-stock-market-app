@@ -1,0 +1,66 @@
+import threading
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+
+closing_prices_plot_lock = threading.Lock()
+crossover_plot_lock = threading.Lock()
+prediction_plot_lock = threading.Lock()
+weekly_forecast_plot_lock = threading.Lock()
+
+
+def determine_cross_signal(sma_dataframe):
+    try:
+        if sma_dataframe.empty or len(sma_dataframe) < 200:
+            return 'Insufficient data for cross analysis (need at least 200 days)'
+        
+        required_cols = ['SMA100', 'SMA200', 'Close']
+        for col in required_cols:
+            if col not in sma_dataframe.columns:
+                return f'Missing required column: {col}'
+            if sma_dataframe[col].isna().all():
+                return f'No valid data in {col} column'
+        
+        sma100_last = sma_dataframe['SMA100'].dropna().iloc[-1] if not sma_dataframe['SMA100'].dropna().empty else None
+        sma200_last = sma_dataframe['SMA200'].dropna().iloc[-1] if not sma_dataframe['SMA200'].dropna().empty else None
+        close_last = sma_dataframe['Close'].dropna().iloc[-1] if not sma_dataframe['Close'].dropna().empty else None
+        
+        if any(val is None for val in [sma100_last, sma200_last, close_last]):
+            return 'Insufficient valid data for cross analysis'
+        
+        golden_cross = sma100_last > sma200_last
+        death_cross = close_last < sma100_last and close_last < sma200_last
+
+        if golden_cross:
+            return 'A Golden Cross has been detected'
+        elif death_cross:
+            return 'A Death Cross has been detected'
+        else: 
+            return 'No significant cross has been detected'
+            
+    except Exception as e:
+        return f'Error in cross signal analysis: {str(e)}'
+
+
+def generate_closing_prices_plot(stockdataframe):
+    with closing_prices_plot_lock:
+        if not isinstance(stockdataframe.index, pd.DatetimeIndex):
+            stockdataframe.index = pd.to_datetime(stockdataframe.index)
+        
+        close_series = stockdataframe['Close']
+        if hasattr(close_series, 'values'):
+            close_values = close_series.values
+            if close_values.ndim > 1:
+                close_values = close_values.flatten()
+            close_prices = close_values.tolist()
+        else:
+            close_prices = list(close_series)
+        
+        dates = stockdataframe.index.tolist()
+        
+        fig = px.line(x=dates, y=close_prices, title='Stock Closing Prices Over Time')
+        fig.update_layout(xaxis_title='Date', yaxis_title='Closing Price ($)')
+        plot_div = fig.to_html(full_html=False)
+        return plot_div
+
