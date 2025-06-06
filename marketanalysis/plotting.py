@@ -64,3 +64,48 @@ def generate_closing_prices_plot(stockdataframe):
         plot_div = fig.to_html(full_html=False)
         return plot_div
 
+
+def generate_crossover_plot(sma_dataframe):
+    with crossover_plot_lock:
+        dates = sma_dataframe['Date'].tolist() if 'Date' in sma_dataframe.columns else sma_dataframe.index.tolist()
+        
+        def safe_extract_values(series):
+            """Safely extract values from a pandas Series"""
+            if hasattr(series, 'values'):
+                values = series.values
+                if values.ndim > 1:
+                    values = values.flatten()
+                return values.tolist()
+            else:
+                return list(series)
+        
+        close_prices = safe_extract_values(sma_dataframe['Close'])
+        sma100_values = safe_extract_values(sma_dataframe['SMA100'])
+        sma200_values = safe_extract_values(sma_dataframe['SMA200'])
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=close_prices, mode='lines', name='Closing Prices', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=dates, y=sma100_values, mode='lines', name='SMA 100', line=dict(color='red')))
+        fig.add_trace(go.Scatter(x=dates, y=sma200_values, mode='lines', name='SMA 200', line=dict(color='green')))
+        fig.update_layout(
+            title='Stock Price with Moving Averages',
+            xaxis_title='Date', 
+            yaxis_title='Price ($)', 
+            legend_title='Indicators'
+        )
+        
+        cross_signal = determine_cross_signal(sma_dataframe)
+        fig.add_annotation(
+            text=f"{cross_signal}", 
+            xref="paper", yref="paper", 
+            x=0.5, y=0.95, 
+            showarrow=False, 
+            font=dict(color="white", size=12), 
+            bgcolor="red", 
+            opacity=0.8,
+            bordercolor="white",
+            borderwidth=1
+        )
+        plot_div = fig.to_html(full_html=False)
+        return plot_div
+
