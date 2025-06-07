@@ -109,3 +109,12 @@ def generate_crossover_plot(sma_dataframe):
         plot_div = fig.to_html(full_html=False)
         return plot_div
 
+
+def generate_prediction_vs_actual_plot(dates, y_test_flat, y_predicted_flat, future_prediction=False):
+    with prediction_plot_lock:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=y_test_flat, mode='lines', name='Actual Prices' , line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=dates, y=y_predicted_flat, mode='lines', name='Predicted Prices', line=dict(color='red')))
+        fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Prices')
+        title = "Weekly Forecast" if future_prediction else "Prediction vs. Actual"
+        return fig
