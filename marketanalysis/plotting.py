@@ -118,3 +118,15 @@ def generate_prediction_vs_actual_plot(dates, y_test_flat, y_predicted_flat, fut
         fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Prices')
         title = "Weekly Forecast" if future_prediction else "Prediction vs. Actual"
         return fig
+
+
+def generate_weekly_forecast_plot(dates, y_predicted_flat):
+    with weekly_forecast_plot_lock:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=y_predicted_flat, mode='lines', name='Weekly Forecast', line=dict(color='green')))
+        fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Prices')
+
+        trend_direction = 'Bearish' if y_predicted_flat[0] > y_predicted_flat[-1] else 'Bullish'
+        
+        fig.add_annotation(text=f'{trend_direction} Trend', xref="paper", yref="paper", x=0.5, y=0.95, showarrow=False, font=dict(size=12, color='black'), bgcolor="red", opacity=0.5)
+        return fig 
