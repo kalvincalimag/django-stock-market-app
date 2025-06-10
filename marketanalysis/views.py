@@ -15,24 +15,39 @@ from django.contrib.auth.decorators import login_required
 
 from . tokens import generate_token
 from rest_framework.views import APIView
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import load_model
 from .forms import StockForm
 from .models import Stock
 from .forms import PasswordResetForm, FeedbackForm
-from rest_framework.response import Response
-from datetime import datetime, timedelta
 
-import threading
+from .constants import (
+    FAQ_GLOSSARY, 
+    MARKET_GLOSSARY
+)
+
+from .plotting import (
+    generate_closing_prices_plot,
+    generate_crossover_plot, 
+    generate_prediction_vs_actual_plot,
+    generate_weekly_forecast_plot,
+    determine_cross_signal
+)
+from .services import (
+    fetch_stock_data,
+    get_company_info,
+    calculate_sma_dataframe,
+    prepare_lstm_data,
+    get_or_train_lstm_model,
+    make_predictions,
+    generate_future_predictions
+)
+
 import pandas as pd
-import yfinance as yf
 import datetime
 import os
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
 import requests
 import json
+
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 
 def home(request):
     return render(request, "authentication/signup.html")
