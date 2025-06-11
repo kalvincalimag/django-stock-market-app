@@ -40,3 +40,35 @@ def create_lstm_model():
     model.compile(optimizer='adam', loss='mean_squared_error')
     return model
 
+
+def fetch_stock_data(ticker_symbol, start_date='2010-01-01', end_date=None, max_retries=3):
+    """
+    Fetch stock data from yfinance with retry logic and error handling
+    """
+    if end_date is None:
+        end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    
+    stockdataframe = None
+    error_message = None
+    
+    for attempt in range(max_retries):
+        try:
+            ticker_obj = yf.Ticker(ticker_symbol)
+            stockdataframe = ticker_obj.history(start=start_date, end=end_date, timeout=10)
+            
+            if not stockdataframe.empty and 'Close' in stockdataframe.columns:
+                break
+            else:
+                if attempt == max_retries - 1:
+                    error_message = f"No data available for ticker {ticker_symbol}. Please verify the ticker symbol is correct."
+                    
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed for {ticker_symbol}: {str(e)}")
+            if attempt == max_retries - 1:
+                error_message = f"Unable to fetch data for {ticker_symbol}. This could be due to network issues or the ticker symbol may be invalid."
+            else:
+                time.sleep(1)
+    
+    return stockdataframe, error_message
+
+
