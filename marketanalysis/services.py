@@ -72,3 +72,35 @@ def fetch_stock_data(ticker_symbol, start_date='2010-01-01', end_date=None, max_
     return stockdataframe, error_message
 
 
+def get_company_info(ticker_symbol):
+    """
+    Get company information and stock exchange details
+    """
+    stock_info_mapping = {
+        "NMS": "NASDAQ",
+        "NYQ": "NYSE",
+        "NGM": "NASDAQ Global Market",
+        "NIM": "NASDAQ Capital Market",
+        "ASE": "NYSE American",
+    }
+    
+    ticker_info = yf.Ticker(ticker_symbol)
+    company_name = "N/A"
+    stock_exchange = "N/A"
+    
+    try:
+        info = ticker_info.info
+        company_name = info.get('longName', info.get('shortName', ticker_symbol.upper()))
+        if not company_name:
+            company_name = ticker_symbol.upper()
+    except:
+        company_name = ticker_symbol.upper()
+        
+    try:
+        exchange_code = ticker_info.fast_info.get('exchange', 'Unknown')
+        stock_exchange = stock_info_mapping.get(exchange_code, exchange_code)
+    except:
+        stock_exchange = "Unknown"
+    
+    return company_name, stock_exchange
+
