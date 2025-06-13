@@ -104,3 +104,26 @@ def get_company_info(ticker_symbol):
     
     return company_name, stock_exchange
 
+
+def calculate_sma_dataframe(stockdataframe):
+    """
+    Calculate Simple Moving Averages (SMA) for crossover analysis
+    """
+    close_prices = stockdataframe['Close'].values.flatten()
+    
+    if len(close_prices) < 200:
+        raise ValueError(f"Insufficient data for crossover analysis. Need at least 200 days of data, but only have {len(close_prices)} days.")
+    
+    simple_moving_avg_100 = pd.Series(close_prices).rolling(100).mean()
+    simple_moving_avg_200 = pd.Series(close_prices).rolling(200).mean()
+
+    sma_dataframe = pd.DataFrame({
+        'Date': stockdataframe.index,
+        'Close': close_prices,
+        'SMA100': simple_moving_avg_100,
+        'SMA200': simple_moving_avg_200
+    })
+    
+    return sma_dataframe
+
+
