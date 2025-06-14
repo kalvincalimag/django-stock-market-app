@@ -127,3 +127,19 @@ def calculate_sma_dataframe(stockdataframe):
     return sma_dataframe
 
 
+def prepare_lstm_data(stockdataframe):
+    """
+    Prepare data for LSTM model training and testing
+    """
+    if len(stockdataframe) < 150:
+        raise ValueError(f"Insufficient data for prediction analysis. Need at least 150 days of data, but only have {len(stockdataframe)} days. Please try a stock with more historical data.")
+    
+    training_70 = pd.DataFrame(stockdataframe['Close'][0:int(len(stockdataframe) * 0.70)])
+    testing_30 = pd.DataFrame(stockdataframe['Close'][int(len(stockdataframe) * 0.70): int(len(stockdataframe))])
+    
+    if len(testing_30) < 30:
+        raise ValueError(f"Insufficient testing data for prediction. Need more historical data for this ticker.")
+    
+    return training_70, testing_30
+
+
