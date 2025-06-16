@@ -143,3 +143,28 @@ def prepare_lstm_data(stockdataframe):
     return training_70, testing_30
 
 
+def train_lstm_model(training_data):
+    """
+    Train LSTM model with the training data
+    """
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data_training_array = scaler.fit_transform(training_data)
+
+    model = create_lstm_model()
+    
+    x_train = []
+    y_train = []
+    
+    for i in range(100, len(data_training_array)):
+        x_train.append(data_training_array[i-100:i, 0])
+        y_train.append(data_training_array[i, 0])
+    
+    x_train, y_train = np.array(x_train), np.array(y_train)
+    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+    
+    print(f"Training LSTM model with {len(x_train)} samples...")
+    model.fit(x_train, y_train, epochs=50, batch_size=32, verbose=0)
+    print("✓ Model training completed")
+    
+    return model, scaler
+
