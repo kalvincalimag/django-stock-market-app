@@ -202,3 +202,21 @@ def make_predictions(model, scaler, training_data, testing_data):
     return y_test_flat, y_predicted_flat, input_data, scale_factor
 
 
+def generate_future_predictions(model, input_data, scale_factor, days=7):
+    """
+    Generate future predictions for the specified number of days
+    """
+    future_x_test = input_data[-100:]  # Using last 100 days for prediction
+    future_predictions = []
+
+    for _ in range(days):
+        future_prediction = model.predict(np.array([future_x_test]))[0][0]
+        future_predictions.append(future_prediction)
+        future_x_test = np.roll(future_x_test, -1)
+        future_x_test[-1][0] = future_prediction
+
+    future_predictions = np.array(future_predictions) * scale_factor
+    
+    return future_predictions
+
+
