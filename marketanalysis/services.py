@@ -168,3 +168,37 @@ def train_lstm_model(training_data):
     
     return model, scaler
 
+
+def make_predictions(model, scaler, training_data, testing_data):
+    """
+    Make predictions using the trained LSTM model
+    """
+    past_100_days = training_data.tail(100)
+    final_dataframe = pd.concat([past_100_days, testing_data], ignore_index=True)
+    input_data = scaler.fit_transform(final_dataframe)
+
+    x_test = []
+    y_test = []
+
+    for i in range(100, input_data.shape[0]):
+        x_test.append(input_data[i - 100: i])
+        y_test.append(input_data[i, 0])
+
+    x_test, y_test = np.array(x_test), np.array(y_test)
+    
+    if len(x_test) == 0:
+        raise ValueError(f"Not enough data to create test samples for prediction. Need more historical data.")
+    
+    y_predicted = model.predict(x_test)
+    scaler_scale = scaler.scale_
+    
+    scale_factor = 1 / scaler_scale[0]
+    y_predicted = y_predicted * scale_factor
+    y_test = y_test * scale_factor
+
+    y_test_flat = y_test.flatten()
+    y_predicted_flat = y_predicted.flatten()
+    
+    return y_test_flat, y_predicted_flat, input_data, scale_factor
+
+
