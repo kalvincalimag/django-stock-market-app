@@ -220,3 +220,30 @@ def generate_future_predictions(model, input_data, scale_factor, days=7):
     return future_predictions
 
 
+def load_trained_model():
+    """
+    Load a pre-trained LSTM model and scaler from disk
+    Returns (model, scaler) if successful, (None, None) if failed
+    """
+    try:
+        if os.path.exists(MODEL_PATH):
+            model = load_model(MODEL_PATH, compile=False)
+            model.compile(optimizer='adam', loss='mean_squared_error')
+                
+            if os.path.exists(SCALER_PATH):
+                with open(SCALER_PATH, 'rb') as f:
+                    scaler = pickle.load(f)
+            else:
+                scaler = MinMaxScaler(feature_range=(0, 1))
+            
+            return model, scaler
+        else:
+            print(f"✗ Model file not found at {MODEL_PATH}")
+            return None, None
+            
+    except Exception as e:
+        print(f"✗ Error loading pre-trained model: {str(e)}")
+        return None, None
+
+
+def save_trained_model(model, scaler):
