@@ -247,3 +247,24 @@ def load_trained_model():
 
 
 def save_trained_model(model, scaler):
+    """
+    Save a trained LSTM model and scaler to disk
+    """
+    try:
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        
+        model.save(MODEL_PATH, save_format='tf', include_optimizer=False)
+        print(f"✓ Successfully saved model to {MODEL_PATH} (without optimizer for compatibility)")
+        
+        with open(SCALER_PATH, 'wb') as f:
+            pickle.dump(scaler, f)
+        print(f"✓ Successfully saved scaler to {SCALER_PATH}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"✗ Error saving model: {str(e)}")
+        return False
+
+
+def get_or_train_lstm_model(training_data, force_retrain=False):
