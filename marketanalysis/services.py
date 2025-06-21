@@ -268,3 +268,31 @@ def save_trained_model(model, scaler):
 
 
 def get_or_train_lstm_model(training_data, force_retrain=False):
+    """
+    Get a trained LSTM model - either load from disk or train a new one
+    Args:
+        training_data: DataFrame with training data
+        force_retrain: If True, skip loading and train a new model
+    Returns:
+        (model, scaler) tuple
+    """
+    model, scaler = None, None
+    
+    if not force_retrain:
+        # Try to load existing model first
+        model, scaler = load_trained_model()
+        
+        if model is not None and scaler is not None:
+            print("✓ Using pre-trained model")
+            return model, scaler
+    
+    print("✓ Training new LSTM model...")
+    model, scaler = train_lstm_model(training_data)
+    
+    save_success = save_trained_model(model, scaler)
+    if save_success:
+        print("✓ New model saved for future use")
+    else:
+        print("✗ Warning: Failed to save new model")
+    
+    return model, scaler 
