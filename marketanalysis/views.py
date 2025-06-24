@@ -59,83 +59,12 @@ def password_reset_complete(request):
     return render(request, "authentication/password_reset_complete.html")
 
 def faq(request):
-    glossary = {
-        "What is Predictly Stock Trend Predictor?": "Predictly Stock Trend Predictor is a web application that uses machine learning to analyze historical stock data and provide predictions on future stock price trends. It aims to assist users in making informed investment decisions.",
-        "How does Predictly Stock Trend Predictor work?": "The application uses historical stock data and machine learning algorithms to identify patterns and trends. It then makes predictions based on this analysis to provide insights into potential future stock price movements.",
-        "Is Predictly Stock Trend Predictor suitable for beginners?": "Yes, Predictly is designed to cater to both beginners and experienced investors. It provides user-friendly tools and visualizations to help users understand and analyze stock data.",
-        "Is registration required to use the application?": "Yes, you need to register for an account to use Predictly Stock Trend Predictor. Registration allows you to access personalized features, including the watchlist and prediction services.",
-        "How can I reset my password if I forget it?": "If you forget your password, you can use the 'Forgot Password?' option on the Sign-in Page. This will guide you through the password recovery process, including sending a password reset email to your registered email address.",
-        "Can I track multiple stocks with Predictly?": "Yes, you can create a personalized watchlist to track multiple stocks simultaneously. The Watchlist Page allows you to monitor the performance of your selected stocks at a glance.",
-        "What is the 'Golden Cross' and 'Death Cross' on the Automated Crossover Page?": "The 'Golden Cross' occurs when the Simple Moving Average (SMA) 100 surpasses the SMA 200, indicating a potential upswing in the stock's performance. The 'Death Cross' is identified when the stock's current price falls below both the SMA 100 and SMA 200, suggesting a potential downward trend.",
-        "How often is the stock data updated on the Last Trade Prices Page?": "Stock data on the Last Trade Prices Page is typically updated regularly, providing you with the most recent information. The frequency of updates may vary based on the data source and market conditions.",
-        "Can I use Predictly on my mobile device?": "Yes, Predictly is designed to be responsive and accessible on both desktop and mobile devices. You can use it on your smartphone or tablet for convenient access on the go.",
-        "Where does Predictly Stock Trend Predictor source its stock data?": "Predictly Stock Trend Predictor sources its stock data from reputable financial data providers, primarily IEX Cloud and Yahoo Finance. These sources provide reliable and up-to-date information on stock prices, market trends, and related data.",
-        "Why does Predictly use data from IEX Cloud and Yahoo Finance?": "We utilize data from IEX Cloud and Yahoo Finance because they are well-established data providers known for their accuracy and comprehensive coverage of financial markets. This ensures that the data used for predictions and analysis is of high quality.",
-        "Is the stock data on Predictly real-time or delayed?": "The availability of real-time or delayed data may vary depending on the specific data source and market conditions. Predictly strives to provide the most up-to-date data available from IEX Cloud and Yahoo Finance, but it's essential to be aware that some data may have a slight delay.",
-        "Are there any limitations on the availability of certain stock data on Predictly?": "Data availability may vary based on the specific stock and the data sources. In some cases, certain stocks or data points may not be available due to limitations imposed by IEX Cloud or Yahoo Finance. Predictly strives to provide the most comprehensive data possible.",
-        "Can I rely on the data accuracy provided by Predictly for my investment decisions?": "While Predictly aims to provide accurate and reliable data, it's important to remember that all investments carry risks, and data should be used as one of several factors in your investment decisions. Always conduct thorough research and consult with financial professionals before making investment choices.",
-        "Can I share my watchlist with others?": "Currently, watchlists are designed for personal use and cannot be shared with other users. Your watchlist is private and customizable based on your preferences.",
-        "Are there any additional resources or educational materials for stock market beginners?": "Yes, we provide educational resources and articles in the Market Glossary section of the application. These materials can help beginners understand stock market concepts and strategies.",
-        "Can I connect my brokerage account to Predictly for real-time data and trading?": "Predictly is primarily a stock analysis and prediction tool. It does not support real-time trading or direct connections to brokerage accounts. Users should use their brokerage platforms for trading.",
-        "What do I do if I encounter technical issues while using the application?": "If you encounter technical issues or have questions about using Predictly, you can reach out to our customer support team for assistance. We're here to help you with any challenges you may face.",
-    }
-
-    return render(request, "pages/faq.html", {"glossary": glossary})
+    return render(request, "pages/faq.html", {"glossary": FAQ_GLOSSARY})
 
 def market_glossary(request):
-    glossary = {
-    "Stock": "A share in the ownership of a company. When you own a company's stock, you own a piece of the company.",
-    "Stock Exchange": "A regulated marketplace where stocks and other securities are bought and sold.",
-    "Bull Market": "A market characterized by rising prices. It's a time when investors are optimistic about the future performance of the market.",
-    "Bear Market": "A market condition marked by declining stock prices, typically caused by pessimism and economic downturns.",
-    "Volatility": "The degree of variation in a stock's price over time, often associated with higher risk and uncertainty.",
-    "Market Capitalization": "The total value of a company's outstanding shares of stock, calculated by multiplying the stock price by the number of shares.",
-    "Liquidity": "The ease with which an asset or security can be bought or sold in the market without affecting its price.",
-    "Liquidity Risk": "The risk that an asset cannot be quickly bought or sold in the market without significantly affecting its price.",
-    "Blue Chip Stocks": "Stocks of well-established, financially stable, and reputable companies known for their reliability and stability.",
-    "Technical Analysis": "The study of historical price and volume data to make predictions about future price movements.",
-    "Fundamental Analysis": "The evaluation of a company's financial health, including earnings, assets, and liabilities, to determine its stock's intrinsic value.",
-    "Short Selling": "A strategy where an investor borrows and sells a stock they don't own, anticipating a price decline to buy it back at a lower price.",
-    "Market Sentiment": "The overall mood and attitude of investors toward the market or a particular asset, which can influence buying and selling decisions.",
-    "Day Trading": "A trading strategy where positions are opened and closed within the same trading day, capitalizing on short-term price fluctuations.",
-    "Price-to-Earnings Ratio": "A valuation metric that compares a company's stock price to its earnings per share, helping assess its relative value.",
-    "Limit Order": "An order to buy or sell a security at a specific price or better, ensuring the trade is executed at a certain price or not at all.",
-    "Futures Contract": "A standardized financial contract that obligates the buyer to purchase and the seller to sell a specified asset at a predetermined future date and price.",
-    "Resistive Support Levels": "Price levels on a stock chart where a stock tends to encounter difficult rising or difficulty falling.",
-    "Capital Gain": "The profit realized when an asset is sold for a higher price than its original purchase price.",
-    "Leverage Ratio": "A measure of a company's debt relative to its equity, indicating its level of financial leverage and risk.",
-    "Value Investing": "An investment strategy that involves selecting stocks trading at prices lower than their intrinsic value, based on fundamentals, with the expectation of long-term growth.",
-    "Candlestick Chart": "A type of price chart used in technical analysis that displays price movements in a visually informative manner, resembling candlesticks.",
-    "Dead Cat Bounce": "A temporary, small recovery in the price of a declining asset, often followed by a further decline.",
-    "Hedging": "A risk management strategy where an investor uses financial instruments like options or futures to offset potential losses in another investment.",
-    "Recession": "A significant and sustained decline in economic activity characterized by reduced consumer spending, investment, and employment.",
-    "Risk-Adjusted Return": "A measure of investment performance that takes into account the level of risk taken to achieve a certain return, often using metrics like the Sharpe ratio.",
-    "Market Timing": "An investment strategy that involves trying to predict the future movements of financial markets to buy and sell assets at optimal times.",
-    "Stock Broker": "A licensed professional or firm that facilitates the buying and selling of securities on behalf of investors.",
-    "Bullish": "Positive sentiment or outlook on a stock or the overall market.",
-    "Bearish": "Negative sentiment or outlook on a stock or the overall market.",
-    "Rally": "A period of sustained increases in stock prices.",
-    "Portfolio Diversification": "Spreading investments across different asset classes or securities to reduce risk.",
-    "Dividend": "A portion of a company's earnings paid to its shareholders on a per-share basis.",
-    "Penny Stock": "A low-priced, highly speculative stock typically trading for less than $5 per share.",
-    "Market Correction": "A decline of at least 10% from a recent high in a stock or index.",
-    "Liquidity Provider": "An entity or individual that offers to buy or sell assets in the financial market, enhancing liquidity by facilitating transactions.",
-    "Market Order": "A type of order to buy or sell a security at the current market price, ensuring immediate execution but not a specific price.",
-    "Option Contract": "A financial derivative that grants the holder the right, but not the obligation, to buy or sell an underlying asset at a predetermined price within a specified timeframe.",
-    "Hedge Fund": "A pooled investment fund that employs various strategies to generate returns for its investors, often with a focus on high-risk and high-reward opportunities.",
-    "Earnings Per Share": "A financial metric that represents a company's profit allocated to each outstanding share of common stock, providing insight into its profitability.",
-    "Margin Trading": "A strategy where investors borrow funds to buy securities, using the purchased assets as collateral, increasing potential returns but also risks.",
-    "Inflation": "The gradual increase in the general price level of goods and services, reducing the purchasing power of a currency over time.",
-    "Yield": "The return on an investment, typically expressed as a percentage, taking into account dividends, interest, or other income generated.",
-    "Index Fund": "A type of mutual fund or exchange-traded fund (ETF) designed to replicate the performance of a specific market index, providing diversified exposure to the underlying assets."
-}
-    
-    if request.user.is_authenticated:
-                fname = request.user.first_name
-    else:
-        fname = ""
-    
-    return render(request, "pages/market_glossary.html", {'fname': fname, 'glossary': glossary})
+    fname = request.user.first_name if request.user.is_authenticated else ""
+    context = {'fname': fname,'glossary': MARKET_GLOSSARY}
+    return render(request, "pages/market_glossary.html", context)
 
 def signup(request):
     if request.method == "POST":
