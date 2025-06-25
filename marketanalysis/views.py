@@ -163,7 +163,6 @@ def signup(request):
         
         # Welcome Email End
 
-        
         # User Email Confirmation Start
         
         current_site = get_current_site(request)
@@ -313,8 +312,6 @@ def feedback_view(request):
 
     return render(request, 'feedback_template.html', {'form': form})
 
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
-
 @login_required  
 def my_watchlist(request):
     if request.method == 'POST':
@@ -345,12 +342,7 @@ def my_watchlist(request):
             except Exception as e:
                 output.append({'symbol': str(ticker_item), 'error': str(e)})
              
-        print(output)
-
-        if request.user.is_authenticated:
-            fname = request.user.first_name.capitalize()
-        else:
-            fname = ""
+        fname = request.user.first_name.capitalize() if request.user.is_authenticated else ""
         
         return render(request, 'pages/my_watchlist.html', {'form': form, 'ticker': ticker, 'output': output, 'fname': fname,})
 
@@ -432,28 +424,38 @@ class LastTradePricesAPIView(View):
         
         ticker_symbol = request.GET.get('ticker_symbol', 'AAPL')
 
-        if ticker_symbol is None:
+        if not isinstance(ticker_symbol, str) or not ticker_symbol.strip():
             ticker_symbol = 'AAPL'
 
         if ticker_symbol:
-            start_date = '2010-01-01'
-            end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        start_date = '2010-01-01'
+        end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        
+        # Fetch stock data using the services module
+        stockdataframe, error_message = fetch_stock_data(ticker_symbol, start_date, end_date)
+        
+        # If we still don't have data after all retries, return error
+        if stockdataframe is None or stockdataframe.empty:
+            context = {
+                'ticker_symbol': ticker_symbol, 
+                'error_message': error_message or "Invalid Ticker or No Data Available",
+            }
+            return render(request, 'pages/last_trade_prices_template.html', context)
+        
+        try:
+            closing_prices_plot = generate_closing_prices_plot(stockdataframe)
+            raw_data_summary = stockdataframe.describe()
             
-            try:
-                stockdataframe = yf.download(ticker_symbol, start=start_date, end=end_date)
-            except:
-                context = {
-                    'ticker_symbol': ticker_symbol, 
-                    'error_message': "Invalid Ticker",
-                }
-                return render(request, 'pages/last_trade_prices_template.html', context)
+            # Get company info using the services module
+            company_name, stock_exchange = get_company_info(ticker_symbol)
             
-            if stockdataframe.empty:
-                context = {
-                    'error_message': "Invalid Ticker",
-                }
-                return render(request, 'pages/last_trade_prices_template.html', context)
-
+        except Exception as e:
+            context = {
+                'ticker_symbol': ticker_symbol,
+                'error_message': f"Error processing data for {ticker_symbol}: {str(e)}"
+            }
+            return render(request, 'pages/last_trade_prices_template.html', context)
+        
             stock_info_mapping = {
                 "NMS": "NASDAQ",
                 "NYQ": "NYSE",
@@ -465,22 +467,22 @@ class LastTradePricesAPIView(View):
             # company_name = ticker_info.info['longName']
             stock_exchange = stock_info_mapping.get(ticker_info.fast_info['exchange'], ticker_info.fast_info['exchange'])
             
-            if request.user.is_authenticated:
-                fname = request.user.first_name
-            else:
-                fname = ""
+        if request.user.is_authenticated:
+            fname = request.user.first_name
+        else:
+            fname = ""
 
             context = {
-               # 'company_name': company_name,
-                'stock_exchange': stock_exchange,
-                'raw_data_summary': raw_data_summary,
-                'closing_prices_plot': closing_prices_plot,
-                'stockdataframe': stockdataframe.to_html(classes='table table-bordered table-striped'),
-                'ticker_symbol': ticker_symbol, 
-                'fname': fname,  
-            }
-            
-        return render(request, 'pages/last_trade_prices_template.html', context)   
+           'company_name': company_name,
+            'stock_exchange': stock_exchange,
+            'raw_data_summary': raw_data_summary,
+            'closing_prices_plot': closing_prices_plot,
+            'stockdataframe': stockdataframe.to_html(classes='table table-bordered table-striped'),
+            'ticker_symbol': ticker_symbol, 
+            'fname': fname,  
+        }
+        
+        return render(request, 'pages/last_trade_prices_template.html', context)
 
 class AutomatedCrossoverAPIView(APIView):
     def get(self, request, ticker_symbol=None):
