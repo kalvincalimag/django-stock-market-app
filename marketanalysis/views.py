@@ -360,65 +360,6 @@ def delete(request, stock_id):
     
     return redirect('my_watchlist')
 
-
-
-closing_prices_plot_lock = threading.Lock()
-crossover_plot_lock = threading.Lock()
-prediction_plot_lock = threading.Lock()
-weekly_forecast_plot_lock = threading.Lock()
-
-def determine_cross_signal(sma_dataframe):
-    golden_cross = sma_dataframe['SMA100'].iloc[-1] > sma_dataframe['SMA200'].iloc[-1]
-    death_cross = sma_dataframe['Close'].iloc[-1] < sma_dataframe['SMA100'].iloc[-1] and sma_dataframe['Close'].iloc[-1] < sma_dataframe['SMA200'].iloc[-1]
-
-    if golden_cross:
-        return 'A Golden Cross has been detected'
-    elif death_cross:
-        return 'A Death Cross has been detected'
-    else: 
-        return 'No significant cross has been detected'
-
-def generate_closing_prices_plot(stockdataframe):
-    with closing_prices_plot_lock:
-        fig = px.line(stockdataframe, x=stockdataframe.index, y='Close')
-        plot_div = fig.to_html(full_html=False)
-        return plot_div
-
-def generate_crossover_plot(sma_dataframe):
-    with crossover_plot_lock:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=sma_dataframe['Date'], y=sma_dataframe['Close'], mode='lines', name='Closing Prices', line=dict(color='blue')))
-        fig.add_trace(go.Scatter(x=sma_dataframe['Date'], y=sma_dataframe['SMA100'], mode='lines', name='SMA 100', line=dict(color='red')))
-        fig.add_trace(go.Scatter(x=sma_dataframe['Date'], y=sma_dataframe['SMA200'], mode='lines', name='SMA 200', line=dict(color='green')))
-        fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Indicators')
-        # Determine Golden Cross or Death Cross
-        cross_signal = determine_cross_signal(sma_dataframe)
-        fig.add_annotation(text=f"{cross_signal}", xref="paper", yref="paper", x=0.5, y=0.95, showarrow=False, font=dict(color="black", size=12), bgcolor="red", opacity=0.5)
-        plot_div = fig.to_html(full_html=False)
-        return plot_div
-
-def generate_prediction_vs_actual_plot(dates, y_test_flat, y_predicted_flat, future_prediction=False):
-    with prediction_plot_lock:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=dates, y=y_test_flat, mode='lines', name='Actual Prices' , line=dict(color='blue')))
-        fig.add_trace(go.Scatter(x=dates, y=y_predicted_flat, mode='lines', name='Predicted Prices', line=dict(color='red')))
-        fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Prices')
-        title = "Weekly Forecast" if future_prediction else "Prediction vs. Actual"
-        return fig
-
-def generate_weekly_forecast_plot(dates, y_predicted_flat):
-    with weekly_forecast_plot_lock:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=dates, y=y_predicted_flat, mode='lines', name='Weekly Forecast', line=dict(color='green')))
-        fig.update_layout(xaxis_title='Date', yaxis_title='Price', legend_title='Prices')
-
-        # Calculate overall trend direction
-        trend_direction = 'Bearish' if y_predicted_flat[0] > y_predicted_flat[-1] else 'Bullish'
-        
-        # Add annotation
-        fig.add_annotation(text=f'{trend_direction} Trend', xref="paper", yref="paper", x=0.5, y=0.95, showarrow=False, font=dict(size=12, color='black'), bgcolor="red", opacity=0.5)
-        return fig
-
 class LastTradePricesAPIView(View):
     def get(self, request, ticker_symbol=None):
         
