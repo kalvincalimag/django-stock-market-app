@@ -368,7 +368,6 @@ class LastTradePricesAPIView(View):
         if not isinstance(ticker_symbol, str) or not ticker_symbol.strip():
             ticker_symbol = 'AAPL'
 
-        if ticker_symbol:
         start_date = '2010-01-01'
         end_date = datetime.datetime.today().strftime('%Y-%m-%d')
         
@@ -397,23 +396,12 @@ class LastTradePricesAPIView(View):
             }
             return render(request, 'pages/last_trade_prices_template.html', context)
         
-            stock_info_mapping = {
-                "NMS": "NASDAQ",
-                "NYQ": "NYSE",
-            }
-            
-            closing_prices_plot = generate_closing_prices_plot(stockdataframe)
-            raw_data_summary = stockdataframe.describe()
-            ticker_info = yf.Ticker(ticker_symbol)
-            # company_name = ticker_info.info['longName']
-            stock_exchange = stock_info_mapping.get(ticker_info.fast_info['exchange'], ticker_info.fast_info['exchange'])
-            
         if request.user.is_authenticated:
             fname = request.user.first_name
         else:
             fname = ""
 
-            context = {
+        context = {
            'company_name': company_name,
             'stock_exchange': stock_exchange,
             'raw_data_summary': raw_data_summary,
@@ -429,7 +417,7 @@ class AutomatedCrossoverAPIView(APIView):
     def get(self, request, ticker_symbol=None):
         
         ticker_symbol = request.GET.get('ticker_symbol', 'AAPL')
-        
+
         if ticker_symbol is None:
             ticker_symbol = 'AAPL'
 
