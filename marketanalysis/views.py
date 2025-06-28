@@ -418,69 +418,59 @@ class AutomatedCrossoverAPIView(APIView):
         
         ticker_symbol = request.GET.get('ticker_symbol', 'AAPL')
 
-        if ticker_symbol is None:
+        if not isinstance(ticker_symbol, str) or not ticker_symbol.strip():
             ticker_symbol = 'AAPL'
 
-        if ticker_symbol:
-            start_date = '2010-01-01'
-            end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        start_date = '2010-01-01'
+        end_date = datetime.datetime.today().strftime('%Y-%m-%d')
 
-            try:
-                stockdataframe = yf.download(ticker_symbol, start=start_date, end=end_date)
-            except:
-                context = {
-                    'ticker_symbol': ticker_symbol, 
-                    'error_message': "Invalid Ticker",
-                }
-                return render(request, 'pages/crossover_data_template.html', context)
-            
-            if stockdataframe.empty:
-                context = {
-                    'error_message': "Invalid Ticker",
-                    'ticker_symbol': ticker_symbol,
-                }
-                return render(request, 'pages/crossover_data_template.html', context)
-
-            stock_info_mapping = {
-                "NMS": "NASDAQ",
-                "NYQ": "NYSE",
+        # Fetch stock data using the services module
+        stockdataframe, error_message = fetch_stock_data(ticker_symbol, start_date, end_date)
+        
+        # If we still don't have data after all retries, return error
+        if stockdataframe is None or stockdataframe.empty:
+            context = {
+                'ticker_symbol': ticker_symbol, 
+                'error_message': error_message or "Invalid Ticker or No Data Available",
             }
+            return render(request, 'pages/crossover_data_template.html', context)
 
-            ticker_info = yf.Ticker(ticker_symbol)
-            # company_name = ticker_info.info['longName']
-            stock_exchange = stock_info_mapping.get(ticker_info.fast_info['exchange'], ticker_info.fast_info['exchange'])
+        try:
+            # Get company info using the services module
+            company_name, stock_exchange = get_company_info(ticker_symbol)
 
-            simple_moving_avg_100 = stockdataframe['Close'].rolling(100).mean()
-            simple_moving_avg_200 = stockdataframe['Close'].rolling(200).mean()
+            # Calculate SMA dataframe using the services module
+            sma_dataframe = calculate_sma_dataframe(stockdataframe)
 
-            sma_dataframe = pd.DataFrame({
-                'Date': stockdataframe.index,
-                'Close': stockdataframe['Close'],
-                'SMA100': simple_moving_avg_100,
-                'SMA200': simple_moving_avg_200
-            })
-
-            # Generate crossover plot
             crossover_plot = generate_crossover_plot(sma_dataframe)
-            # Determine Cross Signal
             cross_signal = determine_cross_signal(sma_dataframe)
 
-            if request.user.is_authenticated:
-                fname = request.user.first_name
-            else:
-                fname = ""
-
+        except ValueError as ve:
             context = {
-                # 'company_name': company_name,
-                'stock_exchange': stock_exchange,
-                'crossover_plot': crossover_plot,
-                'sma_dataframe': sma_dataframe.to_html(classes='table table-bordered table-striped'),
-                'ticker_symbol': ticker_symbol, 
-                'fname': fname, 
-                'cross_signal': cross_signal, 
+                'ticker_symbol': ticker_symbol,
+                'error_message': str(ve)
             }
+            return render(request, 'pages/crossover_data_template.html', context)
+        except Exception as e:
+            context = {
+                'ticker_symbol': ticker_symbol,
+                'error_message': f"Error processing crossover data: {str(e)}"
+            }
+            return render(request, 'pages/crossover_data_template.html', context)
 
-            return render(request, 'pages/crossover_data_template.html', context)     
+        fname = request.user.first_name if request.user.is_authenticated else ""
+
+        context = {
+            # 'company_name': company_name,
+            'stock_exchange': stock_exchange,
+            'crossover_plot': crossover_plot,
+            'sma_dataframe': sma_dataframe.to_html(classes='table table-bordered table-striped'),
+            'ticker_symbol': ticker_symbol, 
+            'fname': fname, 
+            'cross_signal': cross_signal, 
+        }
+
+        return render(request, 'pages/crossover_data_template.html', context)
 
 class PredictionVsActualAPIView(APIView):
     def get(self, request, ticker_symbol=None):
