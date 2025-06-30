@@ -477,100 +477,83 @@ class PredictionVsActualAPIView(APIView):
                 
         ticker_symbol = request.GET.get('ticker_symbol', 'AAPL')
 
-        if ticker_symbol is None:
+        if not isinstance(ticker_symbol, str) or not ticker_symbol.strip():
             ticker_symbol = 'AAPL'
 
-        if ticker_symbol:
-            start_date = '2010-01-01'
-            end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        start_date = '2010-01-01'
+        end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+
+        # Fetch stock data using the services module
+        stockdataframe, error_message = fetch_stock_data(ticker_symbol, start_date, end_date)
+
+        # If we still don't have data after all retries, return error
+        if stockdataframe is None or stockdataframe.empty:
+            context = {
+                'ticker_symbol': ticker_symbol,
+                'error_message': error_message or "No data available for the specified ticker",
+            }
+            return render(request, 'pages/prediction_vs_actual_template.html', context)
+
+        try:
+            # Get company info using the services module
+            company_name, stock_exchange = get_company_info(ticker_symbol)
+            
+            training_70, testing_30 = prepare_lstm_data(stockdataframe)
+            
+            # Try to get or train LSTM model using the services module
+            model, scaler = get_or_train_lstm_model(training_70)
 
             try:
-                stockdataframe = yf.download(ticker_symbol, start=start_date, end=end_date)
-            except:
-                context = {
-                    'ticker_symbol': ticker_symbol, 
-                    'error_message': "Invalid Ticker",
-                }
-                return render(request, 'pages/prediction_vs_actual_template.html', context)
-
-            if stockdataframe.empty:
-                context = {
-                    'error_message': "No data available for the specified ticker",
-                }
-                return render(request, 'pages/prediction_vs_actual_template.html', context)
-
-            stock_info_mapping = {
-                "NMS": "NASDAQ",
-                "NYQ": "NYSE",
-            }
-
-            ticker_info = yf.Ticker(ticker_symbol)
-            stock_exchange = stock_info_mapping.get(ticker_info.fast_info['exchange'], ticker_info.fast_info['exchange'])
-
-            # Data Pre-processing Phase 1 - Splitting into Training & Testing
-            training_70 = pd.DataFrame(stockdataframe['Close'][0:int(len(stockdataframe) * 0.70)])
-            testing_30 = pd.DataFrame(stockdataframe['Close'][int(len(stockdataframe) * 0.70): int(len(stockdataframe))])
-
-            # Data Pre-processing Phase 2 - Scaling/Normalization
-            scaler = MinMaxScaler(feature_range=(0, 1))
-            data_training_array = scaler.fit_transform(training_70)
-
-            # Model Integration
-            model = load_model('marketanalysis/keras_models/keras_model.keras')
-
-            # Testing Part
-            past_100_days = training_70.tail(100)
-            final_dataframe = pd.concat([past_100_days, testing_30], ignore_index=True)
-            input_data = scaler.fit_transform(final_dataframe)
-
-            x_test = []
-            y_test = []
-
-            for i in range(100, input_data.shape[0]):
-                x_test.append(input_data[i - 100: i])
-                y_test.append(input_data[i, 0])
-
-            x_test, y_test = np.array(x_test), np.array(y_test)
-            y_predicted = model.predict(x_test)
-            scaler = scaler.scale_
-            
-            # Reverse Scaling
-            scale_factor = 1 / scaler[0]
-            y_predicted = y_predicted * scale_factor
-            y_test = y_test * scale_factor
-
-            # Flatten the arrays
-            y_test_flat = y_test.flatten()
-            y_predicted_flat = y_predicted.flatten()
+                # Make predictions using the services module
+                y_test_flat, y_predicted_flat, input_data, scale_factor = make_predictions(
+                    model, scaler, training_70, testing_30
+                )
+            except Exception as prediction_error:
+                print(f"✗ Prediction failed with loaded model: {str(prediction_error)}")
+                print("✓ Retrying with freshly trained model...")
+                
+                # Force retrain and try again
+                model, scaler = get_or_train_lstm_model(training_70, force_retrain=True)
+                y_test_flat, y_predicted_flat, input_data, scale_factor = make_predictions(
+                    model, scaler, training_70, testing_30
+                )
         
             dates = stockdataframe.index[int(len(stockdataframe) * 0.70):]
+            
+            if len(dates) != len(y_test_flat):
+                dates = dates[:len(y_test_flat)]
+            
             prediction_vs_actual_plot = generate_prediction_vs_actual_plot(dates, y_test_flat, y_predicted_flat)
                         
             # Generate Weekly Forecast Plot
             future_dates = pd.date_range(start=dates[-1], periods=8, freq='D')[1:]  # Next 7 days
-            future_x_test = input_data[-100:]  # Using last 100 days for prediction
-            future_predictions = []
-
-            for _ in range(7):
-                future_prediction = model.predict(np.array([future_x_test]))[0][0]
-                future_predictions.append(future_prediction)
-                future_x_test = np.roll(future_x_test, -1)  # Roll input data to add new prediction
-                future_x_test[-1][0] = future_prediction
-
-            # Reverse Scaling for future predictions
-            future_predictions = np.array(future_predictions) * scale_factor
+            
+            # Generate future predictions using the services module
+            future_predictions = generate_future_predictions(model, input_data, scale_factor, days=7)
 
             weekly_forecast_plot = generate_weekly_forecast_plot(future_dates, future_predictions)
             
-            # For the Front End Interpretation
             future_trend = 'Bearish Trend' if future_predictions[0] > future_predictions[-1] else 'Bullish Trend'
             
+        except ValueError as ve:
             context = {
-                'stock_exchange': stock_exchange,
-                'prediction_vs_actual_plot': prediction_vs_actual_plot.to_html(full_html=False),
-                'weekly_forecast_plot': weekly_forecast_plot.to_html(full_html=False),
                 'ticker_symbol': ticker_symbol,
-                'future_trend': future_trend, 
+                'error_message': str(ve)
             }
-
             return render(request, 'pages/prediction_vs_actual_template.html', context)
+        except Exception as e:
+            context = {
+                'ticker_symbol': ticker_symbol,
+                'error_message': f"Error processing prediction data: {str(e)}"
+            }
+            return render(request, 'pages/prediction_vs_actual_template.html', context)
+        
+        context = {
+            'stock_exchange': stock_exchange,
+            'prediction_vs_actual_plot': prediction_vs_actual_plot.to_html(full_html=False),
+            'weekly_forecast_plot': weekly_forecast_plot.to_html(full_html=False),
+            'ticker_symbol': ticker_symbol,
+            'future_trend': future_trend, 
+        }
+
+        return render(request, 'pages/prediction_vs_actual_template.html', context)
