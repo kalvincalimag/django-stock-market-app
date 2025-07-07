@@ -32,7 +32,7 @@ Predictly is a multifunctional stock market toolkit built on Python & Django. Of
 
 ### Let's connect
 
-- Twitter [@kalvincalimag\_](https://twitter.com/kalvincalimag_)
+- Threads [@kalvin.calimag](https://www.threads.com/@kalvin.calimag)
 
 ### If you find this project helpful, please consider giving it a ⭐.
 
